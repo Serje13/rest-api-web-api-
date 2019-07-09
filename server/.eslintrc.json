@@ -1,0 +1,68 @@
+{
+    "env": {
+        "node": true,
+        "es6": true
+    },
+    "ecmaFeatures": {
+        "arrowFunctions": true,
+        "blockBindings": true,
+        "classes": true,
+        "defaultParameters": true,
+        "destructuring": true,
+        "forOf": true,
+        "generators": true,
+        "modules": true,
+        "objectLiteralComputedProperties": true,
+        "objectLiteralDuplicateProperties": true,
+        "objectLiteralShorthandMethods": true,
+        "objectLiteralShorthandProperties": true,
+        "regexUFlag": true,
+        "regexYFlag": true,
+        "restParams": true,
+        "spread": true,
+        "superInFunctions": true,
+        "templateStrings": true,
+        "unicodeCodePointEscapes": true,
+        "globalReturn": true
+    },
+    "parser": "babel-eslint",
+    "rules": {
+        "linebreak-style": 0,
+        "global-require": 0,
+        "eslint linebreak-style": [
+            0,
+            "error",
+            "windows"
+        ],
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "curly": [
+            "error",
+            "multi-or-nest"
+        ],
+        "template-curly-spacing": [
+            "error",
+            "never"
+        ],
+        "object-curly-spacing": [
+            "error",
+            "never"
+        ],
+        "array-bracket-spacing": [
+            "error",
+            "never"
+        ],
+        "block-spacing": [
+            "error",
+            "never"
+        ],
+        "no-console": "warn",
+        "no-debugger": "warn"
+    }
+}
