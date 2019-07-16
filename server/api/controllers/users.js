@@ -3,6 +3,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 var config = require("../../config");
 const saltRounds = 10;
+const emailController = require("../controllers/email");
+const emailModule = require("../modules/email/email");
+
 
 const ASC = "ASC";
 
@@ -69,10 +72,31 @@ const logOut = async (req, res) => {
     }
 };
 
-const resetPassword = (req, res) => {
-    console.log("Hello From Reset Password");
-    res.status(200).send({message: "Password successfully reseted"});
+const forgotPassword = async (req, res) => {
+    console.log(req.body.email);
+    try {
+        const {email} = req.body;
+        let user = await User.findOne({email});
+        console.log(user);
+        if (!user)
+            res.status(404).send({message: "The user with this email doesn`t exist!"});
+        const token = await emailModule.usePasswordHashToMakeToken(user);
+        console.log("NEW TOKEN - ", token);
+        const url = await emailModule.getPasswordResetURL(user, token);
+        console.log("URL - ", url);
+        const emailTemplate = await emailModule.resetPasswordTemplate(user, url);
+        await emailModule.transporter.sendMail(emailTemplate, (err) => {
+            if (err)
+                res.status(500).send("Error sending email");
+        });
+        res.status(200).send({message: "The message was sent to Your email!!!"});
+    } catch (err) {
+        res.status(400).send({message: "Error during sending email!!!"});
+    }
 };
+
+
+
 const remove = async (req, res) => {
     console.log("REQ ID  - ", req.params.id);
     try {
@@ -126,7 +150,7 @@ const getAll = async (req, res) => {
         }
     } catch (err) {
         console.log("ERROR during getting All Users - ", err);
-        res.sendStatus(400);
+        res.status(400).send({message: "ERROR during getting All Users"});
     }
 };
 
@@ -134,26 +158,20 @@ const getAll = async (req, res) => {
 const updateUserInfo = async (req, res) => {
     try {
         const {_id, name, email} = req.body;
-        console.log("BODY ID - ", _id);
         const newEmail = email;
         let userExist = await User.findOne({email: newEmail});
-        console.log("userExist - ", userExist);
-        if (userExist && userExist.email === newEmail) {
-            console.log("userExist EMAIL - ", userExist.email);
-            console.log("REQ NEW EMAIL - ", newEmail);
+        if (userExist && userExist.email === newEmail)
             return res.status(403).send({message: "This user is already exists!!! Please try another email!"});
-        }
         else {
             let result = await User.findOneAndUpdate({_id},
                 {name, email: newEmail},
                 {new: true});
             result = normalizer(result);
-            console.log("RESULT AFTER UPDATE - ", result);
             res.status(200).send({data: result, message: "Name and Email successfully Updated!!!"});
         }
     } catch (err) {
         console.log("ERROR during User updating - ", err);
-        res.sendStatus(400);
+        res.status(400).send({message: "ERROR during User updating"});
     }
 };
 
@@ -166,5 +184,5 @@ module.exports = {
     getAll,
     updateUserInfo,
     logOut,
-    resetPassword
+    forgotPassword
 };

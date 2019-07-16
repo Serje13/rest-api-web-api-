@@ -7,7 +7,7 @@ router.get("/", userController.getAll);
 router.get("/user/:id", userController.findOne);
 router.post("/user/register", userController.create);
 router.post("/user/authenticate", userController.authenticate);
-router.post("/user", userController.resetPassword);
+router.post("/user", userController.forgotPassword);
 //PUBLIC ROUTES
 
 

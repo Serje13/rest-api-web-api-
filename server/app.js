@@ -5,7 +5,8 @@ const logger = require("morgan");
 const config = require("./config");
 const orders = require("./api/routes/orders");
 const users = require("./api/routes/users");
-const validateUser = require("./auth/authorization");
+const email = require("./api/routes/email");
+const validateUser = require("./api/modules/auth/authorization");
 const dbConnect = require("./db");
 
 dbConnect();
@@ -36,19 +37,17 @@ app.use(logger("dev"));
 
 // public route
 app.use("/users", users);
-app.use("/password/reset", users);
+app.use("/password/forgot", users);
 
 // private routes
 app.use("/users/remove", validateUser, users);
 app.use("/users/update", validateUser, users);
 app.use("/users/logout", validateUser, users);
-// app.use("users/change_password", validateUser, users);
-// app.use("users/reset_password", validateUser, users);
-
-
-
-// private route
 app.use("/authenticated", validateUser, orders);
+
+app.use("/password/reset", email);
+// private route
+
 
 
 app.get("/", (req, res) => {
