@@ -18,13 +18,16 @@ const usePasswordHashToMakeToken = ({
 }) => {
     const secret = `${password}-${config.SECRET}`;
     const token = jwt.sign({_id}, secret, {
-        expiresIn: 3600 // 1 hour
+        expiresIn: "1h" // 1 hour
     });
     return token;
 };
 
 const getPasswordResetURL = (user, token) =>
     `http://localhost:3000/password/reset/${user._id}/${token}`;
+
+const getAutorizationURL = (token) =>
+    `http://localhost:3000/authenticated/orders/?token=${token}`;
 
 const resetPasswordTemplate = (user, url) => {
     const from = config.email;
@@ -42,9 +45,26 @@ const resetPasswordTemplate = (user, url) => {
     return {from, to, subject, html};
 };
 
+const authorizationTemplate = (user, url) => {
+    const from = config.email;
+    const to = user.email;
+    const subject = "Account Acceptation";
+    const html = `
+      <p>Hi ${user.name || user.email},</p>
+      <p>Go by this link to accept your account:</p>
+      <a href=${url}>${url}</a>
+      <p>If you don’t use this link within 1 hour, it will expire.</p>
+      <p>Do something outside today! </p>
+      `;
+
+    return {from, to, subject, html};
+};
+
 module.exports = {
     transporter,
     getPasswordResetURL,
     resetPasswordTemplate,
-    usePasswordHashToMakeToken
+    usePasswordHashToMakeToken,
+    getAutorizationURL,
+    authorizationTemplate
 };

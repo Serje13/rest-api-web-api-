@@ -44,6 +44,7 @@ app.use("/users/remove", validateUser, users);
 app.use("/users/update", validateUser, users);
 app.use("/users/logout", validateUser, users);
 app.use("/authenticated", validateUser, orders);
+app.use("/authenticated/orders", validateUser, orders);
 
 app.use("/password/reset", email);
 // private route

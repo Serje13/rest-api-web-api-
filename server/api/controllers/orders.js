@@ -2,9 +2,9 @@ const Order = require("../models/order");
 
 const ASC = "ASC";
 const getAll = async (req, res) => {
-    console.log("REQ QUERY -", req.query);
+    console.log("REQ QUERY FROM ORDERS-", req.query);
     try {
-        const {_end, _start, q, _sort, _order} = req.query;
+        const {_end, _start, q, _sort, _order, token} = req.query;
         if (_end && _start || q || _sort && _order) {
             const start = Number(_start);
             const end = Number(_end);
@@ -21,6 +21,8 @@ const getAll = async (req, res) => {
             const total = await Order.find({}).countDocuments();
             let results = await Order.find({});
             console.log("WITHOUT CONDITIONS - ", results);
+            console.log("TOKEN FROM ORDERS-", token);
+            if (token !== undefined) res.set("x-access-token", token);
             res.set("X-TOTAL-COUNT", total);
             res.status(200).send({results, message: "The orders successfully found!!!"});
         }

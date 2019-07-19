@@ -1,7 +1,7 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-var config = require("../../config");
+const config = require("../../config");
 const saltRounds = 10;
 const emailController = require("../controllers/email");
 const emailModule = require("../modules/email/email");
@@ -28,17 +28,30 @@ const create = async (req, res) => {
             console.log("REQ BODY EMAIL - ", email);
             return res.status(403).send({message: "This user is already exists!!! Please try another email!"});
         } else {
-            let hashedPassword = bcrypt.hashSync(password, saltRounds);
+            let hashedPassword = await bcrypt.hash(password, saltRounds);
             let result = await User.create({name, email, password: hashedPassword});
             console.log(result);
-            let token = jwt.sign({id: result._id}, config.SECRET, {expiresIn: "24h"});
-            let newUser = normalizer(result);
-            res.set("x-access-token", token);
-            res.status(200).send({data: {newUser}, message: "The user successfully created!!!"});
+            const token = await jwt.sign({_id: result._id}, config.SECRET, {
+                expiresIn: "1h"
+            });
+            console.log("NEW TOKEN - ", token);
+            const url = await emailModule.getAutorizationURL(token);
+            console.log("URL - ", url);
+            const emailTemplate = await emailModule.authorizationTemplate(result, url);
+            await emailModule.transporter.sendMail(emailTemplate, (err) => {
+                if (err)
+                    res.status(500).send("Error sending email");
+            });
+            // res.set("x-access-token", token);
+            return res.status(200).send({message: "Please, check Your email to get authorization link."});
+            // let token = jwt.sign({id: result._id}, config.SECRET, {expiresIn: "24h"});
+            // result = normalizer(result);
+            // res.set("x-access-token", token);
+            // res.status(200).send({data: result, message: "The user successfully created!!!"});
         }
     } catch (err) {
         console.log("ERROR during creating new User - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 
@@ -58,7 +71,7 @@ const authenticate = async (req, res) => {
 
     } catch (err) {
         console.log("ERROR during authenticating User - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 
@@ -68,7 +81,7 @@ const logOut = async (req, res) => {
         res.status(200).send({_id, key: -1, message: "The User was Loged Out!!!"});
     } catch (err) {
         console.log("ERROR during authenticating User - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 
@@ -91,7 +104,7 @@ const forgotPassword = async (req, res) => {
         });
         res.status(200).send({message: "The message was sent to Your email!!!"});
     } catch (err) {
-        res.status(400).send({message: "Error during sending email!!!"});
+        res.sendStatus(500);
     }
 };
 
@@ -105,7 +118,7 @@ const remove = async (req, res) => {
         res.status(200).send({message: "User successfully DELETED!!!"});
     } catch (err) {
         console.log("ERROR during deleting User - ", err);
-        res.status(400).send({message: "ERROR during deleting User"});
+        res.sendStatus(500);
     }
 };
 
@@ -119,7 +132,7 @@ const findOne = async (req, res) => {
         res.status(200).send({data: result, message: "User successfully FOUND!!!"});
     } catch (err) {
         console.log("Error during finding User - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 
@@ -150,7 +163,7 @@ const getAll = async (req, res) => {
         }
     } catch (err) {
         console.log("ERROR during getting All Users - ", err);
-        res.status(400).send({message: "ERROR during getting All Users"});
+        res.sendStatus(500);
     }
 };
 
@@ -171,7 +184,7 @@ const updateUserInfo = async (req, res) => {
         }
     } catch (err) {
         console.log("ERROR during User updating - ", err);
-        res.status(400).send({message: "ERROR during User updating"});
+        res.sendStatus(500);
     }
 };
 
