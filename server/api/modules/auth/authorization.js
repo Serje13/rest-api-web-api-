@@ -17,6 +17,7 @@ const authorization = async (req, res, next) => {
         });
     } catch (err) {
         console.log("ERROR during Verifying  x-access-token - ", err);
+        res.sendStatus(500);
     }
 };
 

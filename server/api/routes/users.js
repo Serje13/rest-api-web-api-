@@ -8,6 +8,7 @@ router.get("/user/:id", userController.findOne);
 router.post("/user/register", userController.create);
 router.post("/user/authenticate", userController.authenticate);
 router.post("/user", userController.forgotPassword);
+router.post("/postman", userController.testPostman);
 //PUBLIC ROUTES
 
 

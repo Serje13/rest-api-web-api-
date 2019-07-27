@@ -1,4 +1,8 @@
 const Order = require("../models/order");
+const uploader = require("../modules/uploader/uploader");
+const multer = require("multer");
+const fs = require("fs-extra");
+const config = require("../../config");
 
 const ASC = "ASC";
 const getAll = async (req, res) => {
@@ -28,37 +32,67 @@ const getAll = async (req, res) => {
         }
     } catch (err) {
         console.log("ERROR during getting All Orders - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 
 const create = async (req, res) => {
     try {
-        const {order_id, data} = req.body;
-        let result = await Order.create({
-            order_id,
-            data
+        await uploader(req, res, async (err) => {
+            if (err instanceof multer.MulterError) {
+                console.log("ERROR FROM DISK STORAGE - ", err);
+                return res.status(400).send({message: err.message});
+            }
+            // A Multer error occurred when uploading.
+            else if (err) {
+                console.log("ERROR FROM DISK STORAGE NOT MULTER -", err.message);
+                return res.status(400).send({message: err.message});
+            }
+            // An unknown error occurred when uploading.
+            console.log("FILES FROM TESTING POSTmAn - ", req.files);
+            const order_id = Number(req.body.order_id);
+            let data = req.files;
+            data = data.map(f => {
+                let path = f.path.replace(/\\/g, "/");
+                let url = "http://localhost:3000/" + path;
+                return {
+                    image: {
+                        name: f.filename,
+                        url
+                    }
+                };
+            });
+            let result = await Order.create({
+                order_id,
+                data
+            });
+            console.log(
+                `Order Id:${result._id}  successfully Created!!`
+            );
+            console.log(result);
+            res.status(200).send({data: result, message: "Order successfully CREATED!!!"});
         });
-        console.log(
-            `Order Id:${result._id}  successfully Created!!`
-        );
-        console.log(results);
-        res.status(200).send({result, message: "Order successfully CREATED!!!"});
     } catch (err) {
         console.log("ERROR during creating New Order - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 
 const remove = async (req, res) => {
     try {
-        const _id = req.params._id;
-        await Order.findByIdAndRemove(_id);
-        console.log(`Order Id: ${_id} successfully DELETED!!!`);
+        const _id = req.params.id;
+        const order = await Order.findOne({_id});
+        const folder = order.order_id;
+        console.log("FOLDER - ", folder);
+        const path = `${config.uploadPath}${folder}`;
+        console.log("ORDER - ", order);
+        console.log("PATH  - ", path);
+        await fs.remove(path);
+        await Order.findByIdAndRemove({_id: order._id});
         res.status(200).send({message: "Order successfully DELETED!!!"});
     } catch (err) {
         console.log("ERROR during deleting Order - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 
@@ -74,7 +108,7 @@ const update = async (req, res) => {
         res.status(200).send({data: result, message: "Order successfully Updated!!!"});
     } catch (err) {
         console.log("ERROR during ORDER updating - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 
@@ -86,7 +120,7 @@ const findOne = async (req, res) => {
         res.status(200).send({data: result, message: "Order successfully FOUND!!!"});
     } catch (err) {
         console.log("ERROR during finding ORDER - ", err);
-        res.sendStatus(400);
+        res.sendStatus(500);
     }
 };
 

@@ -8,6 +8,9 @@ const users = require("./api/routes/users");
 const email = require("./api/routes/email");
 const validateUser = require("./api/modules/auth/authorization");
 const dbConnect = require("./db");
+//const upload = require("./api/modules/uploader/executor");
+// const fs = require("fs");
+// const multer = require("multer");
 
 dbConnect();
 
@@ -21,7 +24,7 @@ app.use((req, res, next) => {
 
     if (req.method === "OPTIONS") {
         res.header("Access-Control-Allow-Methods", "PUT, POST, PATCH, DELETE, GET");
-        return res.status(200).json({});
+        return res.sendStatus(200);
     }
     next();
 });
@@ -29,22 +32,25 @@ app.use((req, res, next) => {
 app.use(bodyParser.urlencoded({limit: "5mb", extended: false}));
 app.use(bodyParser.json());
 app.use(logger("dev"));
+//app.use(upload.array("file", 10));
+//app.use(upload.fields([{name: "files", maxCount: 10}]));
 
 //Set Public folder
-// app.use(express.static(path.join(__dirname + "/public")));
-// app.use(express.static("public", { index: false, extensions: ["json"] }));
-//app.use(express.static(path.join(__dirname + '/node_modules/bootstrap/dist/css')));
+app.use("/uploads", express.static("uploads"));
 
 // public route
 app.use("/users", users);
 app.use("/password/forgot", users);
+// app.use("/test", upload.single("image"), users);
+//app.use("/test", upload.fields([{name: "files", maxCount: 10}]), users);
+app.use("/test", users);
 
 // private routes
 app.use("/users/remove", validateUser, users);
 app.use("/users/update", validateUser, users);
 app.use("/users/logout", validateUser, users);
 app.use("/authenticated", validateUser, orders);
-app.use("/authenticated/orders", validateUser, orders);
+//app.use("/authenticated/orders", validateUser, orders);
 
 app.use("/password/reset", email);
 // private route

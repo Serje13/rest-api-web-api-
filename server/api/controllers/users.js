@@ -5,6 +5,8 @@ const config = require("../../config");
 const saltRounds = 10;
 const emailController = require("../controllers/email");
 const emailModule = require("../modules/email/email");
+const uploader = require("../modules/uploader/uploader");
+const multer = require("multer");
 
 
 const ASC = "ASC";
@@ -18,7 +20,9 @@ const normalizer = (user) => {
 };
 
 const create = async (req, res) => {
-    // console.log(req.body);
+    console.log(req.body);
+    console.log(req.params);
+    console.log(req.query);
     try {
         const {name, email, password} = req.body;
         let userExist = await User.findOne({email});
@@ -86,7 +90,7 @@ const logOut = async (req, res) => {
 };
 
 const forgotPassword = async (req, res) => {
-    console.log(req.body.email);
+    console.log("REQ BODY FROM FORGOT PASSWORD - ", req.params);
     try {
         const {email} = req.body;
         let user = await User.findOne({email});
@@ -104,7 +108,8 @@ const forgotPassword = async (req, res) => {
         });
         res.status(200).send({message: "The message was sent to Your email!!!"});
     } catch (err) {
-        res.sendStatus(500);
+        //res.sendStatus(500);
+        console.log(err);
     }
 };
 
@@ -188,6 +193,40 @@ const updateUserInfo = async (req, res) => {
     }
 };
 
+const testPostman = async (req, res) => {
+    try {
+        // let result = await uploader(req, res, async (err) => {
+        //     if (err instanceof multer.MulterError) {
+        //         console.log("ERROR FROM DISK STORAGE - ", err);
+        //         return res.status(400).send({message: err.message});
+        //     }
+        //     // A Multer error occurred when uploading.
+        //     else if (err) {
+        //         console.log("ERROR FROM DISK STORAGE NOT MULTER -", err.message);
+        //         return res.status(400).send({message: err.message});
+        //     }
+        //     // An unknown error occurred when uploading.
+        //     console.log("FILES FROM TESTING POSTmAn - ", req.files);
+        //     let data = req.files;
+        //     data = await data.map(f => {
+        //         let path = f.path.replace(/\\/g, "/");
+        //         let url = "http://localhost:3000/" + path;
+        //         return {
+        //             image: {
+        //                 name: f.originalname,
+        //                 url
+        //             }
+        //         };
+        //     });
+        //     res.status(200).send({data});
+        //     // Everything went fine.
+        // });
+        //console.log("RESULT - ", res.body);
+    } catch (err) {
+        console.log("ERROR during User updating - ", err);
+        res.sendStatus(500);
+    }
+};
 
 module.exports = {
     create,
@@ -197,5 +236,6 @@ module.exports = {
     getAll,
     updateUserInfo,
     logOut,
-    forgotPassword
+    forgotPassword,
+    testPostman
 };
