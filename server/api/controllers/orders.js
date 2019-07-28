@@ -3,6 +3,7 @@ const uploader = require("../modules/uploader/uploader");
 const multer = require("multer");
 const fs = require("fs-extra");
 const config = require("../../config");
+const {fileNormalizer} = require("../modules/utils");
 
 const ASC = "ASC";
 const getAll = async (req, res) => {
@@ -12,7 +13,7 @@ const getAll = async (req, res) => {
         if (_end && _start || q || _sort && _order) {
             const start = Number(_start);
             const end = Number(_end);
-            const queryConditions = {"data.name": {$regex: q || "", $options: "i"}}; // conditions
+            const queryConditions = {"data.image.name": {$regex: q || "", $options: "i"}}; // conditions
             const total = await Order.find(queryConditions).countDocuments();
             let results = await Order.find(queryConditions)
                 .skip(start)
@@ -25,10 +26,8 @@ const getAll = async (req, res) => {
             const total = await Order.find({}).countDocuments();
             let results = await Order.find({});
             console.log("WITHOUT CONDITIONS - ", results);
-            console.log("TOKEN FROM ORDERS-", token);
-            if (token !== undefined) res.set("x-access-token", token);
             res.set("X-TOTAL-COUNT", total);
-            res.status(200).send({results, message: "The orders successfully found!!!"});
+            res.status(200).send({data: results, message: "The orders successfully found!!!"});
         }
     } catch (err) {
         console.log("ERROR during getting All Orders - ", err);
@@ -52,16 +51,7 @@ const create = async (req, res) => {
             console.log("FILES FROM TESTING POSTmAn - ", req.files);
             const order_id = Number(req.body.order_id);
             let data = req.files;
-            data = data.map(f => {
-                let path = f.path.replace(/\\/g, "/");
-                let url = "http://localhost:3000/" + path;
-                return {
-                    image: {
-                        name: f.filename,
-                        url
-                    }
-                };
-            });
+            data = await data.map(f => fileNormalizer(f));
             let result = await Order.create({
                 order_id,
                 data
@@ -71,6 +61,7 @@ const create = async (req, res) => {
             );
             console.log(result);
             res.status(200).send({data: result, message: "Order successfully CREATED!!!"});
+            //res.status(200).send({data, message: "Order successfully CREATED!!!"});
         });
     } catch (err) {
         console.log("ERROR during creating New Order - ", err);
@@ -115,7 +106,9 @@ const update = async (req, res) => {
 const findOne = async (req, res) => {
     try {
         const _id = req.params.id;
+        console.log("_ID  - ", _id);
         let result = await Order.findOne({_id});
+        console.log("result  - ", result);
         console.log(`Order ${result._id} successfully Found!`);
         res.status(200).send({data: result, message: "Order successfully FOUND!!!"});
     } catch (err) {

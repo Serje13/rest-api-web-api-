@@ -7,17 +7,10 @@ const emailController = require("../controllers/email");
 const emailModule = require("../modules/email/email");
 const uploader = require("../modules/uploader/uploader");
 const multer = require("multer");
+const {userNormalizer} = require("../modules/utils");
 
 
 const ASC = "ASC";
-
-const normalizer = (user) => {
-    return {
-        _id: user._id,
-        name: user.name,
-        email: user.email
-    };
-};
 
 const create = async (req, res) => {
     console.log(req.body);
@@ -62,10 +55,13 @@ const create = async (req, res) => {
 
 const authenticate = async (req, res) => {
     try {
+        console.log("req.body - ", req.body);
         const {email, password} = req.body;
         let user = await User.findOne({email});
         console.log(user);
-        if (user != null && bcrypt.compareSync(password, user.password)) {
+        const pass = await bcrypt.compare(password, user.password);
+        console.log("COMPARE PASSWORD - ", pass);
+        if (user != null && pass != null) {
             const token = jwt.sign({id: user._id}, config.SECRET, {expiresIn: "24h"});
             console.log(token);
             res.set("x-access-token", token);
@@ -108,8 +104,8 @@ const forgotPassword = async (req, res) => {
         });
         res.status(200).send({message: "The message was sent to Your email!!!"});
     } catch (err) {
-        //res.sendStatus(500);
         console.log(err);
+        res.sendStatus(500);
     }
 };
 
@@ -119,7 +115,7 @@ const remove = async (req, res) => {
     console.log("REQ ID  - ", req.params.id);
     try {
         const _id = req.params.id;
-        await User.findByIdAndDelete(_id);
+        await User.findByIdAndDelete({_id});
         res.status(200).send({message: "User successfully DELETED!!!"});
     } catch (err) {
         console.log("ERROR during deleting User - ", err);
@@ -131,7 +127,7 @@ const findOne = async (req, res) => {
     try {
         const _id = req.params.id;
         let result = await User.findOne({_id});
-        result = normalizer(result);
+        result = userNormalizer(result);
         console.log(`User ${result._id} successfully Found!`);
         console.log(result);
         res.status(200).send({data: result, message: "User successfully FOUND!!!"});
@@ -154,14 +150,14 @@ const getAll = async (req, res) => {
                 .skip(start)
                 .limit(end - start)
                 .sort({[_sort]: _order === ASC ? 1 : -1});
-            results = results.map(user => normalizer(user));
+            results = results.map(user => userNormalizer(user));
             console.log("WITH CONDITIONS - ", results);
             res.set("X-TOTAL-COUNT", total);
             res.status(200).send({data: results, message: "The users successfully found!!!"});
         } else {
             const total = await User.find({}).countDocuments();
             let results = await User.find({});
-            results = results.map(user => normalizer(user));
+            results = results.map(user => userNormalizer(user));
             console.log("WITHOUT CONDITIONS - ", results);
             res.set("X-TOTAL-COUNT", total);
             res.status(200).send({data: results, message: "The users successfully found!!!"});
@@ -184,7 +180,7 @@ const updateUserInfo = async (req, res) => {
             let result = await User.findOneAndUpdate({_id},
                 {name, email: newEmail},
                 {new: true});
-            result = normalizer(result);
+            result = userNormalizer(result);
             res.status(200).send({data: result, message: "Name and Email successfully Updated!!!"});
         }
     } catch (err) {
@@ -193,40 +189,6 @@ const updateUserInfo = async (req, res) => {
     }
 };
 
-const testPostman = async (req, res) => {
-    try {
-        // let result = await uploader(req, res, async (err) => {
-        //     if (err instanceof multer.MulterError) {
-        //         console.log("ERROR FROM DISK STORAGE - ", err);
-        //         return res.status(400).send({message: err.message});
-        //     }
-        //     // A Multer error occurred when uploading.
-        //     else if (err) {
-        //         console.log("ERROR FROM DISK STORAGE NOT MULTER -", err.message);
-        //         return res.status(400).send({message: err.message});
-        //     }
-        //     // An unknown error occurred when uploading.
-        //     console.log("FILES FROM TESTING POSTmAn - ", req.files);
-        //     let data = req.files;
-        //     data = await data.map(f => {
-        //         let path = f.path.replace(/\\/g, "/");
-        //         let url = "http://localhost:3000/" + path;
-        //         return {
-        //             image: {
-        //                 name: f.originalname,
-        //                 url
-        //             }
-        //         };
-        //     });
-        //     res.status(200).send({data});
-        //     // Everything went fine.
-        // });
-        //console.log("RESULT - ", res.body);
-    } catch (err) {
-        console.log("ERROR during User updating - ", err);
-        res.sendStatus(500);
-    }
-};
 
 module.exports = {
     create,
@@ -237,5 +199,4 @@ module.exports = {
     updateUserInfo,
     logOut,
     forgotPassword,
-    testPostman
 };
