@@ -3,7 +3,7 @@ const uploader = require("../modules/uploader/uploader");
 const multer = require("multer");
 const fs = require("fs-extra");
 const config = require("../../config");
-const {fileNormalizer} = require("../modules/utils");
+const utils = require("../modules/utils");
 
 const ASC = "ASC";
 const getAll = async (req, res) => {
@@ -51,7 +51,7 @@ const create = async (req, res) => {
             console.log("FILES FROM TESTING POSTmAn - ", req.files);
             const order_id = Number(req.body.order_id);
             let data = req.files;
-            data = await data.map(f => fileNormalizer(f));
+            data = await data.map(f => utils.filesNormalizer(f));
             let result = await Order.create({
                 order_id,
                 data
@@ -71,12 +71,12 @@ const create = async (req, res) => {
 
 const remove = async (req, res) => {
     try {
+        console.log(req.params.id);
         const _id = req.params.id;
         const order = await Order.findOne({_id});
         const folder = order.order_id;
         console.log("FOLDER - ", folder);
         const path = `${config.uploadPath}${folder}`;
-        console.log("ORDER - ", order);
         console.log("PATH  - ", path);
         await fs.remove(path);
         await Order.findByIdAndRemove({_id: order._id});
@@ -87,16 +87,94 @@ const remove = async (req, res) => {
     }
 };
 
-const update = async (req, res) => {
+const removeImage = async (req, res) => {
     try {
-        const {_id, order_id, data} = req.body;
+        console.log("REQ BODY FROM UPDATE", req.body);
+        const {_id, order_id, name, image_id} = req.body;
+        const path = `${config.uploadPath}${order_id}/${name}`;
+        await fs.remove(path);
+        console.log("_id - ", _id);
+        console.log("order_id - ", order_id);
         let result = await Order.findOneAndUpdate(
             {_id},
-            {order_id, data},
+            {$pull: {data: {_id: image_id}}},
             {new: true}
         );
-        console.log(`Order ${result._id} successfully Updated!`);
-        res.status(200).send({data: result, message: "Order successfully Updated!!!"});
+        console.log("result - ", result);
+        res.status(200).send({data: result, message: "Order successfully Updated"});
+    } catch (err) {
+        console.log("ERROR during ORDER updating - ", err);
+        res.sendStatus(500);
+    }
+};
+
+const changeImage = async (req, res) => {
+    try {
+        await uploader(req, res, async (err) => {
+            if (err instanceof multer.MulterError) {
+                console.log("ERROR FROM DISK STORAGE - ", err);
+                return res.status(400).send({message: err.message});
+            }
+            else if (err) {
+                console.log("ERROR FROM DISK STORAGE NOT MULTER -", err.message);
+                return res.status(400).send({message: err.message});
+            }
+            console.log("FILES FROM CHANGE IMAGE - ", req.files);
+            console.log("req body from change imaGE - ", req.body);
+            const {_id, order_id, name, image_id} = req.body;
+            const path = `${config.uploadPath}${order_id}/${name}`;
+            await fs.remove(path);
+            let data = req.files[0];
+            console.log("data - ", data);
+            data = await utils.fileNormalizer(data);
+            console.log("data - ", data);
+            let result = await Order.findOneAndUpdate(
+                {_id},
+                {$set: {"data.$[image]": data}},
+                {
+                    arrayFilters: [{
+                        "image._id": image_id
+                    }], new: true
+                }
+            );
+            console.log(result);
+            console.log(`Order ${result._id} successfully Updated!`);
+            res.status(200).send({data: result, message: "Order successfully Updated!!!"});
+        });
+    } catch (err) {
+        console.log("ERROR during ORDER updating - ", err);
+        res.sendStatus(500);
+    }
+};
+
+const addImage = async (req, res) => {
+    try {
+        await uploader(req, res, async (err) => {
+            if (err instanceof multer.MulterError) {
+                console.log("ERROR FROM DISK STORAGE - ", err);
+                return res.status(400).send({message: err.message});
+            }
+            else if (err) {
+                console.log("ERROR FROM DISK STORAGE NOT MULTER -", err.message);
+                return res.status(400).send({message: err.message});
+            }
+            console.log("FILES FROM CHANGE IMAGE - ", req.files);
+            console.log("req body from change imaGE - ", req.body);
+            const {_id, order_id} = req.body;
+            const path = `${config.uploadPath}${order_id}`;
+            let data = req.files[0];
+            console.log("data - ", data);
+            data = await utils.fileNormalizer(data);
+            console.log("data - ", data);
+            let result = await Order.findOneAndUpdate(
+                {_id},
+                {$push: {data}},
+                {new: true}
+            );
+            console.log(result);
+            console.log(`Order ${result._id} successfully Updated!`);
+            res.status(200).send({data: result, message: "Order successfully Updated!!!"});
+        });
     } catch (err) {
         console.log("ERROR during ORDER updating - ", err);
         res.sendStatus(500);
@@ -122,5 +200,7 @@ module.exports = {
     remove,
     create,
     findOne,
-    update
+    removeImage,
+    changeImage,
+    addImage
 };

@@ -1,4 +1,3 @@
-//const fs = require("fs");
 const fs = require("fs-extra");
 const multer = require("multer");
 const config = require("../../../config");
@@ -10,9 +9,9 @@ const storage = multer.diskStorage({
             console.log("REQ BODY FROM DISK STORAGE - ", req.body);
             const folder = req.body.order_id;
             let path = `${config.uploadPath}${folder}`;
-            //let fileExist = await fs.existsSync(path + "/" + file.originalname);
-            let fileExist = await fs.pathExists(path + "/" + file.originalname);
-            //console.log("fileExist - ", fileExist);
+            let name = file.originalname.replace(/ /g, "-");
+            let fileExist = await fs.pathExists(path + "/" + name);
+
             if (fileExist)
                 return cb(new Error(`File ${file.originalname} is already Exist!!!`));
             let pathExist = await fs.pathExists(path);
@@ -28,7 +27,7 @@ const storage = multer.diskStorage({
     },
     filename: async (req, file, cb) => {
         try {
-            let fileName = file.originalname.replace(/ /g, "-");;
+            let fileName = file.originalname.replace(/ /g, "-");
             await cb(null, fileName);
         } catch (err) {
             console.log("ERROR during SETTING IMAGE NAME - ", err);
@@ -36,7 +35,12 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({storage: storage});
+const filter = (req, file, cb) => {
+    if (file.mimetype !== "image/png" || file.mimetype !== "image/jpg")
+        return cb(new Error("Only pngs, jpg are allowed"));
+    cb(null, true);
+};
+const upload = multer({storage: storage, fileFilter: filter});
 const uploader = upload.array("data", 10);
 
 module.exports = uploader;
