@@ -41,7 +41,7 @@ app.use("/users", upload.none(), users);
 // private routes
 app.use("/authenticated", validateUser, users);
 app.use("/authenticated", validateUser, orders);
-app.use("/password/reset", email);
+app.use("/password/reset", upload.none(), email);
 // private route
 
 app.get("/", (req, res) => {

@@ -9,7 +9,7 @@ const authorization = async (req, res, next) => {
         const msg = {auth: false, message: "No token provided."};
         if (!token)
             return res.status(401).send(msg);
-        await jwt.verify(token, config.SECRET, (err, decoded) => {
+        await jwt.verify(token, config.SECRET, (err) => {
             const msg = {auth: false, message: "Failed to authenticate token."};
             if (err)
                 return res.status(400).send(msg);

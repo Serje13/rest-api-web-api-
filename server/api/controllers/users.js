@@ -37,14 +37,9 @@ const create = async (req, res) => {
             const emailTemplate = await emailModule.authorizationTemplate(result, url);
             await emailModule.transporter.sendMail(emailTemplate, (err) => {
                 if (err)
-                    res.status(500).send("Error sending email");
+                    return res.status(500).send("Error sending email");
             });
-            // res.set("x-access-token", token);
-            return res.status(200).send({message: "Please, check Your email to get authorization link."});
-            // let token = jwt.sign({id: result._id}, config.SECRET, {expiresIn: "24h"});
-            // result = normalizer(result);
-            // res.set("x-access-token", token);
-            // res.status(200).send({data: result, message: "The user successfully created!!!"});
+            res.status(200).send({message: "Please, check Your email to get authorization link."});
         }
     } catch (err) {
         console.log("ERROR during creating new User - ", err);
@@ -59,15 +54,16 @@ const authenticate = async (req, res) => {
         const {email, password} = req.body;
         let user = await User.findOne({email});
         console.log(user);
+        if (!user) return res.status(401).send({message: "This user doesn`t exist!!! Please, autorized!!! "});
         const pass = await bcrypt.compare(password, user.password);
         console.log("COMPARE PASSWORD - ", pass);
-        if (user != null && pass != null) {
+        if (user !== null && pass !== false) {
             const token = jwt.sign({id: user._id}, config.SECRET, {expiresIn: "24h"});
             console.log(token);
             res.set("x-access-token", token);
-            res.status(200).send({message: "Authentication successfully passed!!!"});
+            return res.status(200).send({message: "Authentication successfully passed!!!"});
         } else
-            res.status(401).send({message: "This user doesn`t exist!!! Please, autorized!!! "});
+            return res.status(401).send({message: "Incorrect Password!!!"});
 
     } catch (err) {
         console.log("ERROR during authenticating User - ", err);
@@ -92,7 +88,7 @@ const forgotPassword = async (req, res) => {
         let user = await User.findOne({email});
         console.log(user);
         if (!user)
-            res.status(404).send({message: "The user with this email doesn`t exist!"});
+            return res.status(404).send({message: `The user with this email - ${email} doesn\`t exist!`});
         const token = await emailModule.usePasswordHashToMakeToken(user);
         console.log("NEW TOKEN - ", token);
         const url = await emailModule.getPasswordResetURL(user, token);
@@ -100,7 +96,7 @@ const forgotPassword = async (req, res) => {
         const emailTemplate = await emailModule.resetPasswordTemplate(user, url);
         await emailModule.transporter.sendMail(emailTemplate, (err) => {
             if (err)
-                res.status(500).send("Error sending email");
+                return res.status(500).send("Error sending email");
         });
         res.status(200).send({message: "The message was sent to Your email!!!"});
     } catch (err) {
@@ -181,7 +177,7 @@ const updateUserInfo = async (req, res) => {
                 {name, email: newEmail},
                 {new: true});
             result = userNormalizer(result);
-            res.status(200).send({data: result, message: "Name and Email successfully Updated!!!"});
+            return res.status(200).send({data: result, message: "Name and Email successfully Updated!!!"});
         }
     } catch (err) {
         console.log("ERROR during User updating - ", err);
