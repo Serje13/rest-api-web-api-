@@ -8,6 +8,8 @@ const emailModule = require("../modules/email/email");
 const uploader = require("../modules/uploader/uploader");
 const multer = require("multer");
 const {userNormalizer} = require("../modules/utils");
+const fs = require("fs-extra");
+const info = require("../../info.json");
 
 
 const ASC = "ASC";
@@ -28,7 +30,15 @@ const create = async (req, res) => {
             let hashedPassword = await bcrypt.hash(password, saltRounds);
             let result = await User.create({name, email, password: hashedPassword});
             console.log(result);
-            const token = await jwt.sign({_id: result._id}, config.SECRET, {
+            // This method write file with admin id and it`s value
+            if (result.email === config.email) {
+                const fileExist = await fs.pathExists(config.admInfo);
+                if (fileExist) await fs.remove(config.admInfo);
+                await fs.writeJson(config.admInfo, {id: result._id});
+            }
+            // The SECRET is generate in depends of user creation admin or user
+            const secret = result.email === config.email ? config.SECRET + config.email : config.SECRET;
+            const token = await jwt.sign({_id: result._id}, secret, {
                 expiresIn: "1h"
             });
             console.log("NEW TOKEN - ", token);
@@ -57,8 +67,9 @@ const authenticate = async (req, res) => {
         if (!user) return res.status(401).send({message: "This user doesn`t exist!!! Please, autorized!!! "});
         const pass = await bcrypt.compare(password, user.password);
         console.log("COMPARE PASSWORD - ", pass);
+        const secret = user.email === config.email ? config.SECRET + config.email : config.SECRET;
         if (user !== null && pass !== false) {
-            const token = jwt.sign({id: user._id}, config.SECRET, {expiresIn: "24h"});
+            const token = jwt.sign({id: user._id}, secret, {expiresIn: "24h"});
             console.log(token);
             res.set("x-access-token", token);
             return res.status(200).send({message: "Authentication successfully passed!!!"});
@@ -111,6 +122,10 @@ const remove = async (req, res) => {
     console.log("REQ ID  - ", req.params.id);
     try {
         const _id = req.params.id;
+        console.log("INFO ID FROM DELETE METHOD - ", info.id);
+        //This method rewrite file which contains admin info 
+        if (_id === info.id) await fs.remove(config.admInfo);
+        await fs.writeJson(config.admInfo, {id: ""});
         await User.findByIdAndDelete({_id});
         res.status(200).send({message: "User successfully DELETED!!!"});
     } catch (err) {

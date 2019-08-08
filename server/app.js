@@ -6,7 +6,7 @@ const config = require("./config");
 const orders = require("./api/routes/orders");
 const users = require("./api/routes/users");
 const email = require("./api/routes/email");
-const validateUser = require("./api/modules/auth/authorization");
+const validation = require("./api/modules/auth/authorization");
 const dbConnect = require("./db");
 const multer = require("multer");
 var upload = multer();
@@ -39,8 +39,9 @@ app.use("/uploads", express.static("uploads"));
 app.use("/users", upload.none(), users);
 
 // private routes
-app.use("/authenticated", validateUser, users);
-app.use("/authenticated", validateUser, orders);
+app.use("/authenticated", validation.authorizeUser, users);
+app.use("/authenticated", validation.authorizeUser, orders);
+//app.use("/authenticated", validation.authorizeAdmin, orders);
 app.use("/password/reset", upload.none(), email);
 // private route
 

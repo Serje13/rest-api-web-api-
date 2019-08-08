@@ -43,6 +43,7 @@ const create = async (req, res) => {
             order_id
         });
         res.status(200).send({data: result, message: "Order successfully CREATED!!!"});
+        //res.status(200).send({message: "Order successfully CREATED!!!"});
     } catch (err) {
         console.log("ERROR during creating New Order - ", err);
         res.sendStatus(500);

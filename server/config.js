@@ -4,5 +4,6 @@ module.exports = {
     port: process.env.port || 3000,
     email: process.env.EMAIL_LOGIN || "testpostbag@gmail.com",
     pass: process.env.EMAIL_PASSWORD || "123.qwerty123",
-    uploadPath: "./uploads/"
+    uploadPath: "./uploads/",
+    admInfo: "./info.json"
 };
